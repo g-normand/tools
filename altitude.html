@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<body>
+<p id="result">Loading...</p>
+
+<script>
+const params = new URLSearchParams(location.search);
+const q = params.get("q");
+
+const result = document.getElementById("result");
+
+if (!q) {
+	result.textContent = "Usage: ?q=latitude,longitude";
+} else {
+	let latLon = q;
+	// If q is itself a Google Maps URL, extract its ?query= value
+	if (q.startsWith("http://") || q.startsWith("https://")) {
+		try {
+			const inner = new URL(q);
+			latLon = inner.searchParams.get("query") || q;
+		} catch (e) {
+			// keep original q
+		}
+	}
+
+	const [lat, lon] = latLon.split(",").map(s => s.trim());
+
+	fetch(
+		`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`
+	)
+	.then(r => r.json())
+	.then(data => {
+		result.innerHTML = `
+			<h2>Coordinates</h2>
+			<p>${lat}, ${lon}</p>
+			<h2>Elevation</h2>
+			<p><strong>${data.elevation[0]} m</strong></p>
+		`;
+	})
+	.catch(err => {
+		result.textContent = "Error: " + err.message;
+	});
+}
+</script>
+</body>
